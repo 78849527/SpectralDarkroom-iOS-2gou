@@ -32,6 +32,8 @@ Spectral Darkroom 是面向 iPhone 的胶片与相纸模拟应用原型。它使
 
 [下载 SpectralDarkroom-unsigned.ipa](https://raw.githubusercontent.com/IsBEICHEN/SpectralDarkroom-iOS/main/downloads/SpectralDarkroom-unsigned.ipa)（约 9.1 MB；iOS 18+、arm64 iPhone，包含新图标和“光谱暗房”显示名称）
 
+当前 IPA 的 SHA-256：`613bc6064905733fe6a8d70d4ae0d9eacade1e1bba9347efeac909fb16f4cd5e`。下载后可运行 `shasum -a 256 SpectralDarkroom-unsigned.ipa` 核对文件。
+
 这是由本仓库源码生成的 **ad-hoc 签名包**，用于检查构建结果，**不能直接安装到 iPhone**。安装前须使用自己的 Apple 开发团队及适当的描述文件重新签名；本仓库不提供开发证书、私钥或描述文件。需要自行构建时使用下面的脚本。
 
 ## 原项目与来源
