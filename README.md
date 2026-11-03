@@ -4,7 +4,9 @@
 
 **把手机照片带进数字暗房，选择胶片和相纸，预览冲印效果，再导出照片。**
 
-Spectral Darkroom 是面向 iPhone 的胶片与相纸模拟应用原型。它使用 SpektraLab 的 C++/Metal 胶片渲染引擎，在手机上提供 SwiftUI 暗房界面：从系统照片选择器导入图片，选择胶片与相纸，调整曝光、颗粒等参数并预览效果，最后将 Display P3 JPEG 保存到系统相册。底部可切换胶片、相纸与微调面板，导出记录可回看并再次分享。
+Spectral Darkroom 是面向 iPhone 的胶片与相纸模拟应用原型。它使用 SpektraLab 的 C++/Metal 胶片渲染引擎和为手机重新编写的 SwiftUI 暗房界面。
+
+**使用流程：** 从系统照片选择器导入图片 → 选择胶片与相纸 → 调整曝光、颗粒并预览 → 导出 Display P3 JPEG 到系统相册。应用内可回看和分享导出记录。
 
 主屏幕显示名称为 **光谱暗房**。图标源文件位于 [`ios/SpectralDarkroom/Icon/AppIcon-1024.png`](ios/SpectralDarkroom/Icon/AppIcon-1024.png)，可编辑的 Core Graphics 绘制代码位于 [`ios/Tools/make-app-icon.swift`](ios/Tools/make-app-icon.swift)。
 
