@@ -6,7 +6,11 @@ selectable film and paper, and saves a Display P3 JPEG to the system Photos libr
 The bottom navigation switches film, paper, and adjustment panels; export history
 keeps local copies for later review and sharing. It has a new SwiftUI phone
 interface and a different name; it is not the full desktop application.
+The Home Screen display name is 光谱暗房.
 Imported images are currently limited to a 4096-pixel long edge.
+The app icon source is `SpectralDarkroom/Icon/AppIcon-1024.png`; its editable
+Core Graphics drawing is `Tools/make-app-icon.swift`. The build compiles the
+icon asset catalog with `actool`.
 
 Build on an Apple silicon Mac with Xcode and the iOS SDK:
 

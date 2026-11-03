@@ -1,8 +1,12 @@
-# Spectral Darkroom for iPhone
+# 光谱暗房 · Spectral Darkroom for iPhone
+
+<img src="ios/SpectralDarkroom/Icon/AppIcon-1024.png" width="120" alt="光谱暗房应用图标">
 
 **把手机照片带进数字暗房，选择胶片和相纸，预览冲印效果，再导出照片。**
 
 Spectral Darkroom 是面向 iPhone 的胶片与相纸模拟应用原型。它使用 SpektraLab 的 C++/Metal 胶片渲染引擎，在手机上提供 SwiftUI 暗房界面：从系统照片选择器导入图片，选择胶片与相纸，调整曝光、颗粒等参数并预览效果，最后将 Display P3 JPEG 保存到系统相册。底部可切换胶片、相纸与微调面板，导出记录可回看并再次分享。
+
+主屏幕显示名称为 **光谱暗房**。图标源文件位于 [`ios/SpectralDarkroom/Icon/AppIcon-1024.png`](ios/SpectralDarkroom/Icon/AppIcon-1024.png)，可编辑的 Core Graphics 绘制代码位于 [`ios/Tools/make-app-icon.swift`](ios/Tools/make-app-icon.swift)。
 
 **This is an unofficial experimental iPhone port**, not the complete SpektraLab desktop app or an official iOS release. The current build is a prototype; actual rendering and installation still need device validation.
 
@@ -10,19 +14,17 @@ Spectral Darkroom 是面向 iPhone 的胶片与相纸模拟应用原型。它使
 
 以下为 iPhone 18 Pro 模拟器中运行当前版本的实际截图，从导入照片到选择胶片、相纸、调整参数和查看导出记录：
 
-<p>
-  <img src="docs/screenshots/01-import.png" width="220" alt="导入照片的应用首屏">
-  <img src="docs/screenshots/02-film.png" width="220" alt="Earthrise 照片的胶片冲印预览">
-  <img src="docs/screenshots/03-paper.png" width="220" alt="选择相纸">
-  <img src="docs/screenshots/04-adjust.png" width="220" alt="调整曝光与颗粒">
-  <img src="docs/screenshots/05-history.png" width="220" alt="导出记录">
-</p>
+| 导入照片 | 胶片预览 |
+|:---:|:---:|
+| <img src="docs/screenshots/01-import.png" width="260" alt="导入照片的应用首屏"> | <img src="docs/screenshots/02-film.png" width="260" alt="Earthrise 照片的胶片冲印预览"> |
+| **选择相纸**<br><img src="docs/screenshots/03-paper.png" width="260" alt="选择相纸"> | **调整参数**<br><img src="docs/screenshots/04-adjust.png" width="260" alt="调整曝光与颗粒"> |
+| **导出记录**<br><img src="docs/screenshots/05-history.png" width="260" alt="导出记录"> | |
 
 演示照片是 NASA 阿波罗 8 号拍摄的 [Earthrise](https://science.nasa.gov/resource/image-earthrise/)（AS08-14-2383）；[苹果 App Store 的官方编辑文章](https://apps.apple.com/id/iphone/story/id1480183734)也曾介绍这张照片。照片来自 NASA，截图不代表 Apple 或 NASA 对本项目的认可。NASA 的[媒体使用说明](https://www.nasa.gov/nasa-brand-center/images-and-media/)适用于该照片；本仓库只包含应用截图，不分发苹果 Landmarks 示例包的照片。
 
 ## 下载 IPA
 
-[下载 SpectralDarkroom-unsigned.ipa](https://raw.githubusercontent.com/IsBEICHEN/SpectralDarkroom-iOS/main/downloads/SpectralDarkroom-unsigned.ipa)（约 8.4 MB；iOS 18+、arm64 iPhone）
+[下载 SpectralDarkroom-unsigned.ipa](https://raw.githubusercontent.com/IsBEICHEN/SpectralDarkroom-iOS/main/downloads/SpectralDarkroom-unsigned.ipa)（约 9.1 MB；iOS 18+、arm64 iPhone，包含新图标和“光谱暗房”显示名称）
 
 这是由本仓库源码生成的 **ad-hoc 签名包**，用于检查构建结果，**不能直接安装到 iPhone**。安装前须使用自己的 Apple 开发团队及适当的描述文件重新签名；本仓库不提供开发证书、私钥或描述文件。需要自行构建时使用下面的脚本。
 
@@ -44,7 +46,7 @@ Spectral Darkroom 是面向 iPhone 的胶片与相纸模拟应用原型。它使
 1. **照片输入：** PhotosUI 选择照片；Core Image 解码并处理方向，将图像转换为线性 sRGB 浮点 RGBA 像素后交给引擎。长边超过 4096 像素时先缩小。
 2. **胶片冲印：** Swift 通过 C 接口调用 SpektraLab 的 C++20 引擎。引擎使用 Metal 渲染、胶片与相纸配置以及印相 LUT；界面将胶片、相纸、曝光和颗粒设置传入一次冲印会话。
 3. **预览与导出：** 渲染结果转换为 Display P3 图像，编码成 JPEG，使用 Photos 框架保存到系统相册，并在应用支持目录保留导出副本供历史列表回看、分享。SwiftUI 提供 iPhone 编辑界面；iOS 26 及以上采用系统 glass 导航样式，较低版本使用材质背景。
-4. **构建与打包：** `ios/build-iphone.sh` 使用 iPhoneOS SDK 的 `clang++` 编译 C++/Metal 引擎并打包静态库，再用 `swiftc` 链接 Swift 应用和系统框架，复制配置与许可文件，ad-hoc 签名后压缩为 IPA。缺少 Xcode Metal Toolchain 时会携带 MSL 源码供运行时编译；此路径仍需真机验证。
+4. **构建与打包：** `ios/build-iphone.sh` 使用 iPhoneOS SDK 的 `clang++` 编译 C++/Metal 引擎并打包静态库，以 `actool` 编译应用图标，再用 `swiftc` 链接 Swift 应用和系统框架，复制配置与许可文件，ad-hoc 签名后压缩为 IPA。缺少 Xcode Metal Toolchain 时会携带 MSL 源码供运行时编译；此路径仍需真机验证。
 
 ## 从源码构建
 

@@ -26,6 +26,12 @@ xcrun ar rcs "$build/libspektrafilm.a" "$build"/objects/*.o
 rm -rf "$build/Payload"
 mkdir -p "$app/engine/shaders" "$app/Licenses"
 cp "$root/ios/SpectralDarkroom/Info.plist" "$app/Info.plist"
+xcrun actool --compile "$app" --platform iphoneos \
+    --minimum-deployment-target 18.0 --target-device iphone \
+    --app-icon AppIcon \
+    --output-partial-info-plist "$build/app-icon-info.plist" \
+    "$root/ios/SpectralDarkroom/Assets.xcassets" >/dev/null
+/usr/libexec/PlistBuddy -c "Merge '$build/app-icon-info.plist'" "$app/Info.plist"
 cp -R "$root/engine/resources/." "$app/engine/"
 cp "$root/engine/src/shaders/"*.metal "$root/engine/src/shaders/spk_common.h" "$app/engine/shaders/"
 if [[ -d "$root/engine/resources_product/profiles" ]]; then
