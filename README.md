@@ -16,11 +16,15 @@ Spectral Darkroom 是面向 iPhone 的胶片与相纸模拟应用原型。它使
 
 以下为 iPhone 18 Pro 模拟器中运行当前版本的实际截图，从导入照片到选择胶片、相纸、调整参数和查看导出记录：
 
-| 导入照片 | 胶片预览 |
+| ① 导入照片 | ② 胶片预览 |
 |:---:|:---:|
 | <img src="docs/screenshots/01-import.png" width="260" alt="导入照片的应用首屏"> | <img src="docs/screenshots/02-film.png" width="260" alt="Earthrise 照片的胶片冲印预览"> |
-| **选择相纸**<br><img src="docs/screenshots/03-paper.png" width="260" alt="选择相纸"> | **调整参数**<br><img src="docs/screenshots/04-adjust.png" width="260" alt="调整曝光与颗粒"> |
-| **导出记录**<br><img src="docs/screenshots/05-history.png" width="260" alt="导出记录"> | |
+| **③ 选择相纸**<br><img src="docs/screenshots/03-paper.png" width="260" alt="选择相纸"> | **④ 调整参数**<br><img src="docs/screenshots/04-adjust.png" width="260" alt="调整曝光与颗粒"> |
+
+<p align="center">
+  <strong>⑤ 导出记录</strong><br>
+  <img src="docs/screenshots/05-history.png" width="260" alt="导出记录">
+</p>
 
 演示照片是 NASA 阿波罗 8 号拍摄的 [Earthrise](https://science.nasa.gov/resource/image-earthrise/)（AS08-14-2383）；[苹果 App Store 的官方编辑文章](https://apps.apple.com/id/iphone/story/id1480183734)也曾介绍这张照片。照片来自 NASA，截图不代表 Apple 或 NASA 对本项目的认可。NASA 的[媒体使用说明](https://www.nasa.gov/nasa-brand-center/images-and-media/)适用于该照片；本仓库只包含应用截图，不分发苹果 Landmarks 示例包的照片。
 
