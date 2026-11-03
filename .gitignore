@@ -1,0 +1,12 @@
+.DS_Store
+._*
+__MACOSX/
+
+ios/.build/
+ios/out/
+*.ipa
+*.mobileprovision
+*.p12
+
+# Local chat export; never publish conversation or device details.
+你好-*.md
