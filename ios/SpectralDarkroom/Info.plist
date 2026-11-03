@@ -16,6 +16,7 @@
     <key>UIDeviceFamily</key><array><integer>1</integer></array>
     <key>UIRequiredDeviceCapabilities</key><array><string>metal</string></array>
     <key>UILaunchScreen</key><dict/>
+    <key>NSPhotoLibraryAddUsageDescription</key><string>将冲印后的新照片保存到你的相册。</string>
     <key>UISupportedInterfaceOrientations</key>
     <array>
         <string>UIInterfaceOrientationPortrait</string>

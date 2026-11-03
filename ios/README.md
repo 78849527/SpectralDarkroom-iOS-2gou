@@ -2,8 +2,10 @@
 
 This iOS 18+ prototype uses the SpektraLab C++/Metal engine and its original
 film and paper profiles. It imports images from the system Photos picker, renders a preview with
-selectable film and paper, and exports a Display P3 JPEG through the system share sheet. It has a new SwiftUI
-phone interface and a different name; it is not the full desktop application.
+selectable film and paper, and saves a Display P3 JPEG to the system Photos library.
+The bottom navigation switches film, paper, and adjustment panels; export history
+keeps local copies for later review and sharing. It has a new SwiftUI phone
+interface and a different name; it is not the full desktop application.
 Imported images are currently limited to a 4096-pixel long edge.
 
 Build on an Apple silicon Mac with Xcode and the iOS SDK:

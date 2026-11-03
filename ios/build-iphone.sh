@@ -45,7 +45,7 @@ xcrun --sdk iphoneos swiftc -disable-sandbox -parse-as-library \
     "$build/libspektrafilm.a" -lc++ \
     -framework Metal -framework Foundation -framework QuartzCore \
     -framework CoreText -framework CoreGraphics -framework Accelerate \
-    -framework CoreImage -framework ImageIO -framework PhotosUI -framework UIKit \
+    -framework CoreImage -framework ImageIO -framework Photos -framework PhotosUI -framework UIKit \
     -o "$app/SpectralDarkroom"
 
 # An ad-hoc signature makes the bundle inspectable. For installation, the

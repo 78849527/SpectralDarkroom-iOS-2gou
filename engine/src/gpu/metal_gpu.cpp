@@ -685,11 +685,20 @@ public:
         desc->setHeight(height);
         desc->setUsage(MTL::TextureUsageShaderRead);
         desc->setStorageMode(MTL::StorageModeShared);
+#if TARGET_OS_SIMULATOR
+        // The simulator rejects linear textures backed by shared buffers.
+        // Copy the completed result into a regular texture for preview.
+        MTL::Texture* tex = device_->newTexture(desc);
+        if (tex) {
+            tex->replaceRegion(MTL::Region::Make2D(0, 0, width, height), 0,
+                               b->mtl->contents(), size_t(row_stride_px) * 8);
+        }
+#else
         MTL::Texture* tex = b->mtl->newTexture(desc, 0, size_t(row_stride_px) * 8);
+#endif
         desc->release();
         if (!tex) { error = "could not create a texture over the result buffer"; return nullptr; }
-        // `newTexture` is already +1 and the texture retains `b->mtl`, so the
-        // caller now holds the only reference it needs. Not tracked here.
+        // The returned texture is already +1; the caller releases it.
         return tex;
     }
 

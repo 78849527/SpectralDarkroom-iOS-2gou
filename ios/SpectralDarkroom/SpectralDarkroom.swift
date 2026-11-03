@@ -2,6 +2,7 @@ import CoreGraphics
 import CoreImage
 import Foundation
 import ImageIO
+import Photos
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -159,6 +160,7 @@ private actor FilmEngine {
 private struct Stock: Identifiable {
     let id: String
     let label: String
+    let originalName: String
 }
 
 private enum DarkroomStyle {
@@ -178,14 +180,30 @@ private struct GlassActionStyle: ViewModifier {
     }
 }
 
-private struct ShareSheet: UIViewControllerRepresentable {
-    let url: URL
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+private struct NavigationGlass: ViewModifier {
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content.glassEffect(.regular.interactive(), in: Capsule())
+        } else {
+            content.background(.ultraThinMaterial, in: Capsule())
+        }
     }
+}
 
-    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+private struct ExportRecord: Identifiable {
+    let url: URL
+    let date: Date
+    var id: URL { url }
+
+    var thumbnail: UIImage? {
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceThumbnailMaxPixelSize: 480,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+              ] as CFDictionary) else { return nil }
+        return UIImage(cgImage: image)
+    }
 }
 
 private enum EditPanel: String, CaseIterable {
@@ -206,8 +224,9 @@ private struct EditorView: View {
     @State private var selectedURL: URL?
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var preview: CGImage?
-    @State private var shareURL: URL?
-    @State private var showingShare = false
+    @State private var showingHistory = false
+    @State private var records: [ExportRecord] = []
+    @State private var selectedRecord: ExportRecord?
     @State private var isWorking = false
     @State private var error: String?
     @State private var activePanel: EditPanel = .film
@@ -219,14 +238,16 @@ private struct EditorView: View {
     @State private var engine = FilmEngine()
 
     private let films = [
-        Stock(id: "kodak_portra_400", label: "Portra 400"),
-        Stock(id: "kodak_portra_160", label: "Portra 160"),
-        Stock(id: "kodak_gold_200", label: "Gold 200"),
-        Stock(id: "fujifilm_pro_400h", label: "Pro 400H"),
+        Stock(id: "kodak_portra_400", label: "柯达人像 400", originalName: "Portra 400"),
+        Stock(id: "kodak_portra_160", label: "柯达人像 160", originalName: "Portra 160"),
+        Stock(id: "kodak_gold_200", label: "柯达金 200", originalName: "Gold 200"),
+        Stock(id: "fujifilm_pro_400h", label: "富士专业 400H", originalName: "Pro 400H"),
     ]
     private let papers = [
-        Stock(id: "kodak_portra_endura", label: "Portra Endura"),
-        Stock(id: "kodak_2383", label: "Kodak 2383"),
+        Stock(id: "kodak_portra_endura", label: "柯达人像 Endura", originalName: "Portra Endura"),
+        Stock(id: "fujifilm_crystal_archive_typeii", label: "富士晶彩 II",
+              originalName: "Crystal Archive Type II"),
+        Stock(id: "kodak_2383", label: "柯达 2383", originalName: "Kodak 2383"),
     ]
 
     var body: some View {
@@ -244,15 +265,17 @@ private struct EditorView: View {
                     .padding(.bottom, 16)
 
                 controls
-                    .frame(height: compact ? 244 : 296)
+                    .frame(height: compact ? 174 : 212)
                     .frame(maxWidth: .infinity)
-                    .background(DarkroomStyle.panel, in: UnevenRoundedRectangle(
-                        topLeadingRadius: 28, topTrailingRadius: 28
-                    ))
-                    .overlay(alignment: .top) {
-                        UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28)
+                    .background(DarkroomStyle.panel, in: RoundedRectangle(cornerRadius: 28))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 28)
                             .strokeBorder(.white.opacity(0.08), lineWidth: 1)
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 10)
+
+                bottomNavigation
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(DarkroomStyle.background.ignoresSafeArea())
@@ -262,10 +285,8 @@ private struct EditorView: View {
                 guard let item else { return }
                 importPhoto(item)
             }
-            .sheet(isPresented: $showingShare) {
-                if let shareURL {
-                    ShareSheet(url: shareURL)
-                }
+            .sheet(isPresented: $showingHistory) {
+                historyView
             }
             .alert("无法完成冲印", isPresented: Binding(
                 get: { error != nil },
@@ -305,7 +326,7 @@ private struct EditorView: View {
                     .frame(width: 36, height: 36)
             }
             .modifier(GlassActionStyle())
-            .accessibilityLabel("导出并分享照片")
+            .accessibilityLabel("导出到相册")
             .disabled(selectedURL == nil || isWorking)
         }
     }
@@ -374,30 +395,17 @@ private struct EditorView: View {
 
     private var controls: some View {
         VStack(spacing: 0) {
-            Capsule()
-                .fill(.white.opacity(0.18))
-                .frame(width: 34, height: 4)
-                .padding(.top, 11)
-                .padding(.bottom, 13)
-            HStack(spacing: 4) {
-                ForEach(EditPanel.allCases, id: \.self) { panel in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.18)) { activePanel = panel }
-                    } label: {
-                        Label(panel.rawValue, systemImage: panel.symbol)
-                            .font(.system(size: 13, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .foregroundStyle(activePanel == panel ? .white : DarkroomStyle.muted)
-                            .background(activePanel == panel ? .white.opacity(0.13) : .clear,
-                                        in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
+            HStack {
+                Text(activePanel.rawValue)
+                    .font(.system(size: 16, weight: .semibold, design: .serif))
+                    .foregroundStyle(.white)
+                Spacer()
+                Text(activePanel == .adjust ? "松开滑块后冲印" : "点选后自动冲印")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DarkroomStyle.muted)
             }
-            .padding(4)
-            .background(.white.opacity(0.045), in: Capsule())
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 24)
+            .padding(.top, 18)
 
             ScrollView {
                 Group {
@@ -416,7 +424,7 @@ private struct EditorView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 16)
+                .padding(.top, 13)
                 .padding(.bottom, 8)
             }
             .scrollIndicators(.hidden)
@@ -437,6 +445,74 @@ private struct EditorView: View {
         }
     }
 
+    private var bottomNavigation: some View {
+        HStack(spacing: 10) {
+            navigationItems
+                .frame(maxWidth: .infinity)
+                .modifier(NavigationGlass())
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 20)
+                        .onEnded { gesture in
+                            guard abs(gesture.translation.width) > 36,
+                                  abs(gesture.translation.width) > abs(gesture.translation.height)
+                            else { return }
+                            let panels = EditPanel.allCases
+                            guard let current = panels.firstIndex(of: activePanel) else { return }
+                            let next = min(max(current + (gesture.translation.width < 0 ? 1 : -1),
+                                               0), panels.count - 1)
+                            withAnimation(.snappy(duration: 0.24)) {
+                                activePanel = panels[next]
+                            }
+                        }
+                )
+            Button {
+                records = loadRecords()
+                showingHistory = true
+            } label: {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(width: 58, height: 58)
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .modifier(NavigationGlass())
+            .accessibilityLabel("导出记录")
+        }
+        .padding(.horizontal, 18)
+        .frame(height: 78)
+        .frame(maxWidth: .infinity)
+        .background(DarkroomStyle.background)
+    }
+
+    private var navigationItems: some View {
+        HStack(spacing: 0) {
+            ForEach(EditPanel.allCases, id: \.self) { panel in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.18)) { activePanel = panel }
+                } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: panel.symbol)
+                            .font(.system(size: 20, weight: .medium))
+                            .frame(height: 23)
+                        Text(panel.rawValue)
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                        .foregroundStyle(activePanel == panel ? DarkroomStyle.accent : .white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(activePanel == panel ? .white.opacity(0.14) : .clear,
+                                    in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .id(panel)
+                .accessibilityAddTraits(activePanel == panel ? .isSelected : [])
+            }
+        }
+        .padding(3)
+    }
+
     private func stockChoices(_ stocks: [Stock], selection: Binding<String>,
                               subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -453,17 +529,21 @@ private struct EditorView: View {
                             selection.wrappedValue = stock.id
                             if selectedURL != nil { process(tier: "live") }
                         } label: {
-                            VStack(alignment: .leading, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 8) {
                                 Image(systemName: chosen ? "checkmark.circle.fill" : "circle")
                                     .font(.system(size: 15))
                                     .foregroundStyle(chosen ? DarkroomStyle.accent : .white.opacity(0.3))
                                 Spacer(minLength: 0)
                                 Text(stock.label)
-                                    .font(.system(size: 15, weight: .medium, design: .serif))
+                                    .font(.system(size: 14, weight: .medium))
                                     .foregroundStyle(.white)
                                     .lineLimit(1)
+                                Text(stock.originalName)
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(DarkroomStyle.muted)
+                                    .lineLimit(1)
                             }
-                            .frame(width: 132, height: 75, alignment: .leading)
+                            .frame(width: 136, height: 90, alignment: .leading)
                             .padding(12)
                             .background(
                                 LinearGradient(
@@ -527,7 +607,6 @@ private struct EditorView: View {
                 selectedURL = url
                 selectedPhoto = nil
                 preview = nil
-                shareURL = nil
                 isWorking = false
                 process(tier: "live")
             } catch {
@@ -562,13 +641,120 @@ private struct EditorView: View {
                     guard CGImageDestinationFinalize(destination) else {
                         throw RenderError.message("无法写入 JPEG 文件")
                     }
-                    shareURL = target
-                    showingShare = true
+                    try await saveToPhotos(target)
+                    let historyURL = try historyDirectory()
+                        .appendingPathComponent(UUID().uuidString)
+                        .appendingPathExtension("jpg")
+                    try FileManager.default.copyItem(at: target, to: historyURL)
+                    records = loadRecords()
                 }
             } catch {
                 self.error = error.localizedDescription
             }
             isWorking = false
+        }
+    }
+
+    private func saveToPhotos(_ url: URL) async throws {
+        let status = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
+        guard status == .authorized || status == .limited else {
+            throw RenderError.message("没有保存到相册的权限；请在系统设置中允许添加照片")
+        }
+        try await PHPhotoLibrary.shared().performChanges {
+            PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: url)
+        }
+    }
+
+    private func historyDirectory() throws -> URL {
+        let base = try FileManager.default.url(for: .applicationSupportDirectory,
+                                               in: .userDomainMask, appropriateFor: nil,
+                                               create: true)
+            .appendingPathComponent("ExportHistory", isDirectory: true)
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        return base
+    }
+
+    private func loadRecords() -> [ExportRecord] {
+        guard let directory = try? historyDirectory(),
+              let urls = try? FileManager.default.contentsOfDirectory(
+                at: directory, includingPropertiesForKeys: [.creationDateKey],
+                options: [.skipsHiddenFiles]
+              ) else { return [] }
+        return urls.filter { $0.pathExtension.lowercased() == "jpg" }
+            .map { url in
+                let date = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)
+                    ?? .distantPast
+                return ExportRecord(url: url, date: date)
+            }
+            .sorted { $0.date > $1.date }
+    }
+
+    private var historyView: some View {
+        NavigationStack {
+            ScrollView {
+                if records.isEmpty {
+                    ContentUnavailableView("暂无导出记录", systemImage: "photo.stack",
+                                           description: Text("保存到相册的照片会显示在这里"))
+                        .padding(.top, 70)
+                } else {
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())],
+                              spacing: 14) {
+                        ForEach(records) { record in
+                            Button { selectedRecord = record } label: {
+                                VStack(alignment: .leading, spacing: 7) {
+                                    if let thumbnail = record.thumbnail {
+                                        Image(uiImage: thumbnail)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(height: 170)
+                                            .frame(maxWidth: .infinity)
+                                            .clipped()
+                                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    }
+                                    Text(record.date, format: .dateTime.year().month().day()
+                                        .hour().minute())
+                                        .font(.caption)
+                                        .foregroundStyle(DarkroomStyle.muted)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(18)
+                }
+            }
+            .background(DarkroomStyle.background)
+            .navigationTitle("导出记录")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") { showingHistory = false }
+                }
+            }
+        }
+        .sheet(item: $selectedRecord) { record in
+            recordDetail(record)
+        }
+    }
+
+    private func recordDetail(_ record: ExportRecord) -> some View {
+        NavigationStack {
+            GeometryReader { area in
+                if let image = UIImage(contentsOfFile: record.url.path) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: area.size.width, height: area.size.height)
+                }
+            }
+            .background(DarkroomStyle.background)
+            .navigationTitle("已保存到相册")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("完成") { selectedRecord = nil }
+                }
+            }
         }
     }
 }
