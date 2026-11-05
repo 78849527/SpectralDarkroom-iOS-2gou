@@ -1,0 +1,38 @@
+name: iOS16 Startup Isolation Probes
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - debug/ios16-swiftui-only
+
+permissions:
+  contents: read
+
+jobs:
+  start-probe:
+    name: "Startup probe / ${{ matrix.mode }}"
+    runs-on: macos-15
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [uikit, swiftui]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build minimal boot probe
+        run: |
+          bash ios/StartupProbe/build-probe.sh "${{ matrix.mode }}" "$RUNNER_TEMP/startup-output"
+      - name: Validate app minimum OS and independent identifier
+        run: |
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$RUNNER_TEMP/spectral-startup-probe-${{ matrix.mode }}/Payload/SpectralDarkroom.app/Info.plist")" = "16.0"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$RUNNER_TEMP/spectral-startup-probe-${{ matrix.mode }}/Payload/SpectralDarkroom.app/Info.plist"
+          test -s "$RUNNER_TEMP/startup-output/SpectralStartup-${{ matrix.mode }}-iOS16.ipa"
+      - name: Upload startup test IPA
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: SpectralStartup-${{ matrix.mode }}-iOS16
+          path: ${{ runner.temp }}/startup-output/SpectralStartup-${{ matrix.mode }}-iOS16.ipa
+          if-no-files-found: error
+          retention-days: 30
