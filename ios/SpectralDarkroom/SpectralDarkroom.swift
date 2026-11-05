@@ -687,9 +687,18 @@ private struct EditorView: View {
         NavigationStack {
             ScrollView {
                 if records.isEmpty {
-                    ContentUnavailableView("暂无导出记录", systemImage: "photo.stack",
-                                           description: Text("保存到相册的照片会显示在这里"))
-                        .padding(.top, 70)
+                    VStack(spacing: 12) {
+                        Image(systemName: "photo.stack")
+                            .font(.system(size: 35))
+                            .foregroundStyle(DarkroomStyle.muted)
+                        Text("暂无导出记录")
+                            .font(.headline)
+                        Text("保存到相册的照片会显示在这里")
+                            .font(.subheadline)
+                            .foregroundStyle(DarkroomStyle.muted)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 70)
                 } else {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())],
                               spacing: 14) {
@@ -721,7 +730,7 @@ private struct EditorView: View {
             .navigationTitle("导出记录")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("完成") { showingHistory = false }
                 }
             }
@@ -745,7 +754,7 @@ private struct EditorView: View {
             .navigationTitle("已保存到相册")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button("完成") { selectedRecord = nil }
                 }
             }
