@@ -454,7 +454,7 @@ private struct EditorView: View {
                             guard let current = panels.firstIndex(of: activePanel) else { return }
                             let next = min(max(current + (gesture.translation.width < 0 ? 1 : -1),
                                                0), panels.count - 1)
-                            withAnimation(.snappy(duration: 0.24)) {
+                            withAnimation(.interactiveSpring(response: 0.24, dampingFraction: 0.86)) {
                                 activePanel = panels[next]
                             }
                         }
