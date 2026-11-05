@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - debug/ios16-linkage-matrix
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios16-linkage-isolation.yml'
 
 permissions:
   contents: read

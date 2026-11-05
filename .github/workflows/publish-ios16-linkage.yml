@@ -1,0 +1,43 @@
+name: Publish iOS16 Linkage Diagnostic Downloads
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - debug/ios16-linkage-matrix
+    paths:
+      - .github/workflows/publish-ios16-linkage.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Fetch successful UIKit and native-link diagnostic IPAs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ipafiles/native" "$RUNNER_TEMP/ipafiles/uistub"
+          gh run download 41961573240 -n SpectralLink-native-iOS16 -D "$RUNNER_TEMP/ipafiles/native"
+          gh run download 41961573240 -n SpectralLink-uistub-iOS16 -D "$RUNNER_TEMP/ipafiles/uistub"
+          test -s "$RUNNER_TEMP/ipafiles/native/SpectralLink-native-iOS16.ipa"
+          test -s "$RUNNER_TEMP/ipafiles/uistub/SpectralLink-uistub-iOS16.ipa"
+      - name: Publish stable direct IPA links
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="ios16-linkage-diagnostics-v1"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" \
+              --title "iOS 16 – Linkage crash isolation IPAs" \
+              --notes "Two separate sideload tests: native = tiny SwiftUI app linked to C++/Metal; uistub = complete original editor SwiftUI code linked to a stub native API. Do not use for photo processing. Compare whether each one opens on iOS 16. Built by Actions run 41961573240."
+          fi
+          gh release upload "$tag" "$RUNNER_TEMP/ipafiles/native/SpectralLink-native-iOS16.ipa" "$RUNNER_TEMP/ipafiles/uistub/SpectralLink-uistub-iOS16.ipa" --clobber
+          gh release view "$tag" --json assets --jq '.assets[].name'
