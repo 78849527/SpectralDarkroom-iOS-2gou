@@ -12,7 +12,52 @@ import UniformTypeIdentifiers
 struct SpectralDarkroomApp: App {
     var body: some Scene {
         WindowGroup {
-            EditorView()
+            // Do not instantiate the complex editor until the user explicitly
+            // requests it. This separates iOS 16 dyld/startup failures from
+            // EditorView initialization and graphics failures.
+            LaunchDiagnosticView()
+        }
+    }
+}
+
+// Temporary launch diagnostic. Remove after the iOS 16 startup failure is found.
+private struct LaunchDiagnosticView: View {
+    @State private var openEditor = false
+
+    var body: some View {
+        Group {
+            if openEditor {
+                EditorView()
+            } else {
+                VStack(alignment: .leading, spacing: 18) {
+                    Text("光谱暗房 · iOS 16 诊断版")
+                        .font(.title2.weight(.semibold))
+                    Text("如果能看见此页，说明安装包、SwiftUI 启动和动态库加载已经成功。")
+                        .font(.body)
+                    Text("系统：iOS " + UIDevice.current.systemVersion)
+                        .font(.subheadline)
+                    Text("上次进入暗房状态：" +
+                         (UserDefaults.standard.string(forKey: "spectraldarkroom.diag.state")
+                            ?? "尚未尝试"))
+                        .font(.footnote)
+                    Button("进入暗房（测试界面启动）") {
+                        // Written synchronously before the potentially failing
+                        // SwiftUI view is created. Read it after relaunch.
+                        UserDefaults.standard.set(
+                            "已点击进入暗房",
+                            forKey: "spectraldarkroom.diag.state"
+                        )
+                        openEditor = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    Text("请分别告诉我：打开本应用是否闪退、点击进入暗房后是否闪退。")
+                        .font(.footnote)
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .foregroundColor(.white)
+                .background(Color.black.ignoresSafeArea())
+            }
         }
     }
 }

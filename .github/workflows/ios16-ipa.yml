@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - compat/ios16
+      - debug/ios16-launch
 
 permissions:
   contents: read
@@ -35,7 +36,7 @@ jobs:
       - name: Upload IPA for TrollStore testing
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: SpectralDarkroom-iOS16-IPA
+          name: SpectralDarkroom-iOS16-Diagnostic-IPA
           path: ${{ runner.temp }}/spectraldarkroom-ipa/SpectralDarkroom-unsigned.ipa
           retention-days: 30
           if-no-files-found: error
