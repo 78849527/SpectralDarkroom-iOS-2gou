@@ -1,0 +1,41 @@
+name: Build SpectralDarkroom iOS16 IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - compat/ios16
+
+permissions:
+  contents: read
+
+jobs:
+  build-ipa:
+    runs-on: macos-15
+    timeout-minutes: 55
+    steps:
+      - name: Check out full repository and film data
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          lfs: true
+      - name: Verify Xcode and iOS toolchain
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+          test -s engine/resources/spektrafilm_constants.bin
+      - name: Build arm64 iOS16 IPA
+        run: |
+          bash ios/build-iphone.sh "$RUNNER_TEMP/spectraldarkroom-ipa"
+      - name: Validate packaged MinimumOSVersion
+        run: |
+          test -s "$RUNNER_TEMP/spectraldarkroom-ipa/SpectralDarkroom-unsigned.ipa"
+          version=$(/usr/libexec/PlistBuddy -c 'Print MinimumOSVersion' ios/.build/Payload/SpectralDarkroom.app/Info.plist)
+          test "$version" = "16.0"
+          echo "MinimumOSVersion: $version"
+      - name: Upload IPA for TrollStore testing
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: SpectralDarkroom-iOS16-IPA
+          path: ${{ runner.temp }}/spectraldarkroom-ipa/SpectralDarkroom-unsigned.ipa
+          retention-days: 30
+          if-no-files-found: error

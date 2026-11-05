@@ -170,23 +170,17 @@ private enum DarkroomStyle {
     static let muted = Color(red: 0.62, green: 0.63, blue: 0.62)
 }
 
+// Use SwiftUI APIs available since iOS 16. The newer glass styles are
+// deliberately excluded from this compatibility branch so Xcode 16 can build it.
 private struct GlassActionStyle: ViewModifier {
-    @ViewBuilder func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.buttonStyle(.glass)
-        } else {
-            content.buttonStyle(.bordered)
-        }
+    func body(content: Content) -> some View {
+        content.buttonStyle(.bordered)
     }
 }
 
 private struct NavigationGlass: ViewModifier {
-    @ViewBuilder func body(content: Content) -> some View {
-        if #available(iOS 26.0, *) {
-            content.glassEffect(.regular.interactive(), in: Capsule())
-        } else {
-            content.background(.ultraThinMaterial, in: Capsule())
-        }
+    func body(content: Content) -> some View {
+        content.background(.ultraThinMaterial, in: Capsule())
     }
 }
 
@@ -281,7 +275,7 @@ private struct EditorView: View {
             .background(DarkroomStyle.background.ignoresSafeArea())
             .preferredColorScheme(.dark)
             .tint(DarkroomStyle.accent)
-            .onChange(of: selectedPhoto) { _, item in
+            .onChange(of: selectedPhoto) { item in
                 guard let item else { return }
                 importPhoto(item)
             }

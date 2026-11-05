@@ -1205,8 +1205,11 @@ Gpu* Gpu::create_metal(void* device_handle, const std::string& metallib_path, st
             return nullptr;
         }
         auto* options = MTL::CompileOptions::alloc()->init();
-        options->setMathMode(MTL::MathModeSafe);
-        options->setMathFloatingPointFunctions(MTL::MathFloatingPointFunctionsPrecise);
+        // mathMode / mathFloatingPointFunctions are iOS 18+ selectors.
+        // On iOS 16, the older property provides the same safe/precise mode.
+        options->setFastMathEnabled(false);
+        // Never adopt the compiler's latest MSL version on older iPhones.
+        options->setLanguageVersion(MTL::LanguageVersion3_0);
         constexpr const char* names[] = {
             "blur", "contrast_mask", "gamut", "grain", "nodes",
             "overscan", "scene_latitude", "util"

@@ -6,7 +6,7 @@ destination=${1:-"$root/ios/out"}
 build="$root/ios/.build"
 app="$build/Payload/SpectralDarkroom.app"
 sdk=$(xcrun --sdk iphoneos --show-sdk-path)
-target=arm64-apple-ios18.0
+target=arm64-apple-ios16.0
 
 mkdir -p "$build/objects" "$build/ModuleCache" "$destination"
 if [[ ! -f "$root/engine/resources/spektrafilm_constants.bin" ]]; then
@@ -27,7 +27,7 @@ rm -rf "$build/Payload"
 mkdir -p "$app/engine/shaders" "$app/Licenses"
 cp "$root/ios/SpectralDarkroom/Info.plist" "$app/Info.plist"
 xcrun actool --compile "$app" --platform iphoneos \
-    --minimum-deployment-target 18.0 --target-device iphone \
+    --minimum-deployment-target 16.0 --target-device iphone \
     --app-icon AppIcon \
     --output-partial-info-plist "$build/app-icon-info.plist" \
     "$root/ios/SpectralDarkroom/Assets.xcassets" >/dev/null
