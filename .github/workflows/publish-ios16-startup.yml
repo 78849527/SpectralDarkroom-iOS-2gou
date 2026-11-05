@@ -1,0 +1,41 @@
+name: Publish iOS 16 Startup Test Downloads
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - debug/ios16-swiftui-only
+    paths:
+      - .github/workflows/publish-ios16-startup.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish-test-ipas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Download independently built and verified startup IPAs
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ipafiles/uikit" "$RUNNER_TEMP/ipafiles/swiftui"
+          gh run download 41960258874 -n SpectralStartup-uikit-iOS16 -D "$RUNNER_TEMP/ipafiles/uikit"
+          gh run download 41960258874 -n SpectralStartup-swiftui-iOS16 -D "$RUNNER_TEMP/ipafiles/swiftui"
+          test -s "$RUNNER_TEMP/ipafiles/uikit/SpectralStartup-uikit-iOS16.ipa"
+          test -s "$RUNNER_TEMP/ipafiles/swiftui/SpectralStartup-swiftui-iOS16.ipa"
+      - name: Publish permanent GitHub Release URLs
+        run: |
+          set -euo pipefail
+          tag="ios16-startup-probes-v1"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" \
+              --title "SpectralDarkroom iOS 16 startup diagnostics" \
+              --notes "Two independent iOS 16 launch diagnostics from Action 41960258874. UIKit and SwiftUI-only. No photographic rendering engine is linked. Sideload testing only; use TrollStore where appropriate."
+          fi
+          gh release upload "$tag" "$RUNNER_TEMP/ipafiles/uikit/SpectralStartup-uikit-iOS16.ipa" "$RUNNER_TEMP/ipafiles/swiftui/SpectralStartup-swiftui-iOS16.ipa" --clobber
+          gh release view "$tag" --json assets --jq '.assets[].name'
