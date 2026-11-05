@@ -1,0 +1,47 @@
+name: iOS16 Native Linkage / UI Isolation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - debug/ios16-linkage-matrix
+
+permissions:
+  contents: read
+
+jobs:
+  link-probe:
+    runs-on: macos-15
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [native, uistub]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Build isolated launch target
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ matrix.mode }}" == native ]]; then
+            export SPECTRAL_SWIFT_SOURCE="$GITHUB_WORKSPACE/ios/StartupProbe/NativeLinkProbe.swift"
+            export SPECTRAL_DIAG_SUFFIX=native
+          else
+            export SPECTRAL_ENGINE_STUB=1
+            export SPECTRAL_DIAG_SUFFIX=uistub
+          fi
+          bash ios/build-iphone.sh "$RUNNER_TEMP/ios16-test"
+          cp "$RUNNER_TEMP/ios16-test/SpectralDarkroom-unsigned.ipa" "$RUNNER_TEMP/ios16-test/SpectralLink-${{ matrix.mode }}-iOS16.ipa"
+      - name: Verify minimum OS, app identity, C++ linkage mode
+        run: |
+          test "$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' ios/.build/Payload/SpectralDarkroom.app/Info.plist)" = "16.0"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' ios/.build/Payload/SpectralDarkroom.app/Info.plist
+          xcrun otool -L ios/.build/Payload/SpectralDarkroom.app/SpectralDarkroom
+      - name: Upload IPA
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: SpectralLink-${{ matrix.mode }}-iOS16
+          path: ${{ runner.temp }}/ios16-test/SpectralLink-${{ matrix.mode }}-iOS16.ipa
+          if-no-files-found: error
+          retention-days: 30

@@ -8,12 +8,18 @@ app="$build/Payload/SpectralDarkroom.app"
 sdk=$(xcrun --sdk iphoneos --show-sdk-path)
 target=arm64-apple-ios16.0
 
+rm -rf "$build/objects"
 mkdir -p "$build/objects" "$build/ModuleCache" "$destination"
 if [[ ! -f "$root/engine/resources/spektrafilm_constants.bin" ]]; then
     echo "Missing tracked engine/resources; finish the repository checkout first." >&2
     exit 1
 fi
 
+if [[ "${SPECTRAL_ENGINE_STUB:-0}" == 1 ]]; then
+    xcrun --sdk iphoneos clang -target "$target" -isysroot "$sdk" -O2 \
+        -I"$root/engine/include" \
+        -c "$root/ios/StartupProbe/EngineStub.c" -o "$build/objects/EngineStub.o"
+else
 for source in "$root"/engine/src/core/*.cpp "$root"/engine/src/gpu/*.cpp "$root"/engine/src/pipeline/*.cpp; do
     [[ "$source" == */vulkan_gpu.cpp ]] && continue
     xcrun --sdk iphoneos clang++ -target "$target" -isysroot "$sdk" \
@@ -21,11 +27,17 @@ for source in "$root"/engine/src/core/*.cpp "$root"/engine/src/gpu/*.cpp "$root"
         -I"$root/engine/src/core" -I"$root/engine/third_party/metal-cpp" \
         -c "$source" -o "$build/objects/$(basename "$source" .cpp).o"
 done
+fi
 xcrun ar rcs "$build/libspektrafilm.a" "$build"/objects/*.o
 
 rm -rf "$build/Payload"
 mkdir -p "$app/engine/shaders" "$app/Licenses"
 cp "$root/ios/SpectralDarkroom/Info.plist" "$app/Info.plist"
+if [[ -n "${SPECTRAL_DIAG_SUFFIX:-}" ]]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier org.spectraldarkroom.mobile.ios16link.${SPECTRAL_DIAG_SUFFIX}" "$app/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName 链接测试-${SPECTRAL_DIAG_SUFFIX}" "$app/Info.plist"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 4" "$app/Info.plist"
+fi
 xcrun actool --compile "$app" --platform iphoneos \
     --minimum-deployment-target 16.0 --target-device iphone \
     --app-icon AppIcon \
@@ -47,7 +59,7 @@ xcrun --sdk iphoneos swiftc -disable-sandbox -parse-as-library \
     -I"$root/engine/include" \
     -module-cache-path "$build/ModuleCache" \
     -import-objc-header "$root/ios/SpectralDarkroom/Bridge.h" \
-    "$root/ios/SpectralDarkroom/SpectralDarkroom.swift" \
+    "${SPECTRAL_SWIFT_SOURCE:-$root/ios/SpectralDarkroom/SpectralDarkroom.swift}" \
     "$build/libspektrafilm.a" -lc++ \
     -framework Metal -framework Foundation -framework QuartzCore \
     -framework CoreText -framework CoreGraphics -framework Accelerate \
